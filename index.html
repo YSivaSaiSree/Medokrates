@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Classifier</title>
+</head>
+<body>
+
+<form id="symptomForm">
+    <label for="symptomsInput">Type your symptoms:</label>
+    <input type="text" id="symptomsInput" autocomplete="off">
+    <div id="suggestionBox"></div>
+
+    <div id="selectedSymptoms">
+        <p>Selected Symptoms:</p>
+        <ul id="selectedSymptomsList"></ul>
+    </div>
+
+    <button type="button" onclick="submitSymptoms()">Submit</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const symptomsInput = document.getElementById('symptomsInput');
+    const suggestionBox = document.getElementById('suggestionBox');
+    const selectedSymptomsList = document.getElementById('selectedSymptomsList');
+
+    symptomsInput.addEventListener('input', function () {
+        const partialInput = symptomsInput.value;
+        if (partialInput.length > 0) {
+            fetch(`/suggest-symptoms?partialInput=${partialInput}`)
+                .then(response => response.json())
+                .then(suggestions => {
+                    suggestionBox.innerHTML = suggestions.map(symptom => `<div onclick="addSymptom('${symptom}')">${symptom}</div>`).join('');
+                });
+        } else {
+            suggestionBox.innerHTML = '';
+        }
+    });
+
+    window.addSymptom = function (symptom) {
+        const listItem = document.createElement('li');
+        listItem.textContent = symptom;
+        selectedSymptomsList.appendChild(listItem);
+        symptomsInput.value = '';
+        suggestionBox.innerHTML = '';
+    };
+
+    window.submitSymptoms = function () {
+        const selectedSymptoms = Array.from(selectedSymptomsList.children).map(li => li.textContent);
+        fetch('/classify-disease', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ selectedSymptoms }),
+        })
+        .then(response => response.json())
+        .then(result => alert(`Disease Prediction: ${result.prediction}`))
+        .catch(error => console.error('Error:', error));
+    };
+});
+</script>
+
+</body>
+</html>
